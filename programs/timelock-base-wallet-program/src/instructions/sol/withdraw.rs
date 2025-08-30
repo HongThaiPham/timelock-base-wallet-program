@@ -17,7 +17,11 @@ pub struct WithdrawSolLock<'info> {
 
 impl<'info> WithdrawSolLock<'info> {
     pub fn handler(&mut self) -> Result<()> {
-        require_gte!(self.vault.unlock_timestamp, Clock::get()?.unix_timestamp, TimelockBaseWalletErrorCode::VaultLocked);
+        let clock = Clock::get()?;
+        msg!("Withdrawing sol from vault {}", self.vault.key());
+        msg!("Current timestamp: {}", clock.unix_timestamp);
+        msg!("Unlock timestamp: {}", self.vault.unlock_timestamp);
+        require!(self.vault.unlock_timestamp.ge(&clock.unix_timestamp), TimelockBaseWalletErrorCode::VaultLocked);
         **self.signer.to_account_info().try_borrow_mut_lamports()? += self.vault.amount;
         **self.vault.to_account_info().try_borrow_mut_lamports()? -= self.vault.amount;
         Ok(())

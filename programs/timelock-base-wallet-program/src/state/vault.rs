@@ -22,6 +22,7 @@ impl Vault {
         unlock_timestamp: i64,
         mint: Option<Pubkey>,
     ) -> Result<Self> {
+        msg!("Creating vault {}", Clock::get()?.unix_timestamp);
         require_gt!(
             unlock_timestamp,
             Clock::get()?.unix_timestamp,

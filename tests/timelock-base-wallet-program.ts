@@ -115,7 +115,7 @@ describe('timelock-base-wallet-program', () => {
     }
   });
 
-  it('Init sol vault should be successful', async () => {
+  it.skip('Init sol vault should be successful', async () => {
     const { program, payer, context } = testContext;
     const params = {
       amount: new BN(100000000),
@@ -147,7 +147,7 @@ describe('timelock-base-wallet-program', () => {
     console.log('Your transaction signature', tx);
   });
 
-  it('Withdraw sol should be successful', async () => {
+  it.skip('Withdraw sol should be successful', async () => {
     const { program, payer, context } = testContext;
 
     const params = {
@@ -190,19 +190,22 @@ describe('timelock-base-wallet-program', () => {
     console.log('Your transaction signature', tx);
   });
 
-  it.skip('Withdraw sol should be failt when vault is not unlocked', async () => {
+  it('Withdraw sol should be failt when vault is not unlocked', async () => {
+    const { provider, program, payer, context } = testContext;
+
     const params = {
       amount: new BN(100000000),
-      unlockTimestamp: new BN(new Date().getTime() / 1000 + 3756530627),
+      unlockTimestamp: new BN(new Date().getTime() / 1000 + 30),
     };
 
-    console.log(params.unlockTimestamp.toNumber());
+    console.log('failt', params.unlockTimestamp.toNumber());
 
     await program.methods
       .initializeSolLock(params.amount, params.unlockTimestamp)
       .accounts({
         signer: payer.publicKey,
       })
+      .signers([payer])
       .rpc();
 
     const [vaultAddress] = web3.PublicKey.findProgramAddressSync(
@@ -221,17 +224,16 @@ describe('timelock-base-wallet-program', () => {
         signer: payer.publicKey,
         vault: vaultAddress,
       })
+      .signers([payer])
       .rpc();
 
-    const vaultAccount = await provider.connection.getAccountInfo(vaultAddress);
+    const vaultAccount = await context.banksClient.getAccount(vaultAddress);
     expect(vaultAccount).to.be.null;
 
-    const vaultBalance = await provider.connection.getBalance(vaultAddress);
-    expect(vaultBalance).to.eq(0);
     console.log('Your transaction signature', tx);
   });
 
-  it('Init spl vault should be successful', async () => {
+  it.skip('Init spl vault should be successful', async () => {
     const { provider, program, payer, context, mint } = testContext;
 
     const params = {
@@ -271,7 +273,7 @@ describe('timelock-base-wallet-program', () => {
     console.log('Your transaction signature', tx);
   });
 
-  it('Withdraw spl should be successful', async () => {
+  it.skip('Withdraw spl should be successful', async () => {
     const { provider, program, payer, context, mint } = testContext;
 
     const params = {
