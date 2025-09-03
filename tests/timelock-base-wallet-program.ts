@@ -1,5 +1,5 @@
 import * as anchor from '@coral-xyz/anchor';
-import { Program, web3, BN } from '@coral-xyz/anchor';
+import { Program, web3, BN, AnchorError } from '@coral-xyz/anchor';
 import { TimelockBaseWalletProgram } from '../target/types/timelock_base_wallet_program';
 import { expect } from 'chai';
 import {
@@ -115,7 +115,7 @@ describe('timelock-base-wallet-program', () => {
     }
   });
 
-  it.skip('Init sol vault should be successful', async () => {
+  it('Init sol vault should be successful', async () => {
     const { program, payer, context } = testContext;
     const params = {
       amount: new BN(100000000),
@@ -147,7 +147,7 @@ describe('timelock-base-wallet-program', () => {
     console.log('Your transaction signature', tx);
   });
 
-  it.skip('Withdraw sol should be successful', async () => {
+  it('Withdraw sol should be successful', async () => {
     const { program, payer, context } = testContext;
 
     const params = {
@@ -218,22 +218,29 @@ describe('timelock-base-wallet-program', () => {
       program.programId
     );
 
-    const tx = await program.methods
-      .withdrawSolLock()
-      .accountsPartial({
-        signer: payer.publicKey,
-        vault: vaultAddress,
-      })
-      .signers([payer])
-      .rpc();
+    try {
+      await program.methods
+        .withdrawSolLock()
+        .accountsPartial({
+          signer: payer.publicKey,
+          vault: vaultAddress,
+        })
+        .signers([payer])
+        .rpc();
+    } catch (error) {
+      expect(error).to.be.instanceOf(AnchorError);
+
+      expect(error.error.errorCode.code).to.eq('VaultLocking');
+    }
 
     const vaultAccount = await context.banksClient.getAccount(vaultAddress);
-    expect(vaultAccount).to.be.null;
+    expect(vaultAccount).to.be.not.null;
 
-    console.log('Your transaction signature', tx);
+    const vaultBalance = await context.banksClient.getBalance(vaultAddress);
+    expect(new BN(vaultBalance).gt(params.amount)).to.be.true;
   });
 
-  it.skip('Init spl vault should be successful', async () => {
+  it('Init spl vault should be successful', async () => {
     const { provider, program, payer, context, mint } = testContext;
 
     const params = {
@@ -273,7 +280,7 @@ describe('timelock-base-wallet-program', () => {
     console.log('Your transaction signature', tx);
   });
 
-  it.skip('Withdraw spl should be successful', async () => {
+  it('Withdraw spl should be successful', async () => {
     const { provider, program, payer, context, mint } = testContext;
 
     const params = {

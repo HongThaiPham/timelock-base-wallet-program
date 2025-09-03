@@ -8,6 +8,8 @@ pub enum TimelockBaseWalletErrorCode {
     AmountMustBeGreaterThanZero,
     #[msg("Vault is locked")]
     VaultLocked,
+    #[msg("Vault is locking")]
+    VaultLocking,
     #[msg("Invalid vault mint")]
     InvalidVaultMint,
     #[msg("Custom error message")]
