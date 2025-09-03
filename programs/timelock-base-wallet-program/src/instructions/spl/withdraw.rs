@@ -46,6 +46,11 @@ pub struct WithdrawSplLock<'info> {
 
 impl<'info> WithdrawSplLock<'info> {
     pub fn handler(&mut self) -> Result<()> {
+        let clock = Clock::get()?;
+        require!(
+            self.vault.unlock_timestamp.le(&clock.unix_timestamp),
+            TimelockBaseWalletErrorCode::VaultLocking
+        );
         let mint_key = &self.mint.key();
         let seeds = &[
             Vault::SEED,

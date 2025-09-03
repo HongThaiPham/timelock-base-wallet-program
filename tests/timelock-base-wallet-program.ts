@@ -14,7 +14,12 @@ import {
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
 import { BankrunProvider } from 'anchor-bankrun';
-import { startAnchor, AddedAccount, ProgramTestContext } from 'solana-bankrun';
+import {
+  startAnchor,
+  AddedAccount,
+  ProgramTestContext,
+  Clock,
+} from 'solana-bankrun';
 
 interface TestContext {
   context: ProgramTestContext;
@@ -104,19 +109,12 @@ async function setupTest(): Promise<TestContext> {
 }
 
 describe('timelock-base-wallet-program', () => {
-  let testContext: TestContext;
-
   const mintX = web3.Keypair.generate();
   console.log({ mintX: mintX.publicKey.toBase58() });
 
-  before(async () => {
-    {
-      testContext = await setupTest();
-    }
-  });
-
   it('Init sol vault should be successful', async () => {
-    const { program, payer, context } = testContext;
+    const { program, payer, context } = await setupTest();
+
     const params = {
       amount: new BN(100000000),
       unlockTimestamp: new BN(new Date().getTime() / 1000 + 60), // 1 minute in the future
@@ -148,20 +146,22 @@ describe('timelock-base-wallet-program', () => {
   });
 
   it('Withdraw sol should be successful', async () => {
-    const { program, payer, context } = testContext;
+    const { program, payer, context } = await setupTest();
 
     const params = {
       amount: new BN(100000000),
-      unlockTimestamp: new BN(new Date().getTime() / 1000 + 1), // 1 minute in the future
+      unlockTimestamp: new BN(new Date().getTime() / 1000 + 3), // 1 minute in the future
     };
 
-    await program.methods
-      .initializeSolLock(params.amount, params.unlockTimestamp)
-      .accounts({
-        signer: payer.publicKey,
-      })
-      .signers([payer])
-      .rpc();
+    expect(
+      await program.methods
+        .initializeSolLock(params.amount, params.unlockTimestamp)
+        .accounts({
+          signer: payer.publicKey,
+        })
+        .signers([payer])
+        .rpc()
+    ).to.be.ok;
 
     const [vaultAddress] = web3.PublicKey.findProgramAddressSync(
       [
@@ -171,6 +171,17 @@ describe('timelock-base-wallet-program', () => {
         params.unlockTimestamp.toArrayLike(Buffer, 'le', 8),
       ],
       program.programId
+    );
+
+    const currentClock = await context.banksClient.getClock();
+    context.setClock(
+      new Clock(
+        currentClock.slot,
+        currentClock.epochStartTimestamp,
+        currentClock.epoch,
+        currentClock.leaderScheduleEpoch,
+        BigInt(params.unlockTimestamp.add(new BN(10)).toNumber())
+      )
     );
 
     const tx = await program.methods
@@ -191,7 +202,7 @@ describe('timelock-base-wallet-program', () => {
   });
 
   it('Withdraw sol should be failt when vault is not unlocked', async () => {
-    const { provider, program, payer, context } = testContext;
+    const { program, payer, context } = await setupTest();
 
     const params = {
       amount: new BN(100000000),
@@ -241,7 +252,7 @@ describe('timelock-base-wallet-program', () => {
   });
 
   it('Init spl vault should be successful', async () => {
-    const { provider, program, payer, context, mint } = testContext;
+    const { program, payer, context, mint } = await setupTest();
 
     const params = {
       amount: new BN(100000000),
@@ -281,11 +292,11 @@ describe('timelock-base-wallet-program', () => {
   });
 
   it('Withdraw spl should be successful', async () => {
-    const { provider, program, payer, context, mint } = testContext;
+    const { program, payer, context, mint } = await setupTest();
 
     const params = {
       amount: new BN(100000000),
-      unlockTimestamp: new BN(new Date().getTime() / 1000 + 1),
+      unlockTimestamp: new BN(new Date().getTime() / 1000 + 3),
     };
     const [vaultAddress] = web3.PublicKey.findProgramAddressSync(
       [
@@ -313,10 +324,16 @@ describe('timelock-base-wallet-program', () => {
     const vaultAccount = await context.banksClient.getAccount(vaultAddress);
     expect(vaultAccount).to.be.not.null;
 
-    // const vaultBalance = await provider.connection.getTokenAccountBalance(
-    //   vaultAta
-    // );
-    // expect(vaultBalance.value.amount).to.eq(params.amount.toString());
+    const currentClock = await context.banksClient.getClock();
+    context.setClock(
+      new Clock(
+        currentClock.slot,
+        currentClock.epochStartTimestamp,
+        currentClock.epoch,
+        currentClock.leaderScheduleEpoch,
+        BigInt(params.unlockTimestamp.add(new BN(10)).toNumber())
+      )
+    );
 
     const tx = await program.methods
       .withdrawSplLock()
@@ -330,5 +347,63 @@ describe('timelock-base-wallet-program', () => {
       .rpc();
 
     console.log('Your transaction signature', tx);
+  });
+
+  it('Withdraw spl should be failt when vault is not unlocked', async () => {
+    const { program, payer, context, mint } = await setupTest();
+
+    const params = {
+      amount: new BN(100000000),
+      unlockTimestamp: new BN(new Date().getTime() / 1000 + 6),
+    };
+    const [vaultAddress] = web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from('vault'),
+        payer.publicKey.toBuffer(),
+        mint.toBuffer(),
+        params.amount.toArrayLike(Buffer, 'le', 8),
+        params.unlockTimestamp.toArrayLike(Buffer, 'le', 8),
+      ],
+      program.programId
+    );
+
+    const vaultAta = getAssociatedTokenAddressSync(mint, vaultAddress, true);
+
+    expect(
+      await program.methods
+        .initializeSplLock(params.amount, params.unlockTimestamp)
+        .accounts({
+          signer: payer.publicKey,
+          mint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([payer])
+        .rpc()
+    ).to.be.ok;
+
+    const vaultAccount = await context.banksClient.getAccount(vaultAddress);
+    expect(vaultAccount).to.be.not.null;
+
+    // const vaultBalance = await provider.connection.getTokenAccountBalance(
+    //   vaultAta
+    // );
+    // expect(vaultBalance.value.amount).to.eq(params.amount.toString());
+
+    try {
+      await program.methods
+        .withdrawSplLock()
+        .accountsPartial({
+          signer: payer.publicKey,
+          mint,
+          vault: vaultAddress,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([payer])
+        .rpc();
+    } catch (error) {
+      expect(error).to.be.instanceOf(AnchorError);
+
+      expect(error.error.errorCode.code).to.eq('VaultLocking');
+    }
   });
 });
