@@ -7,11 +7,16 @@
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
-    "generate-client": "ts-node ./create-codama-client.ts"
+    "generate-client": "ts-node ./create-codama-client.ts",
+    "test": "tsx app/index.ts",
+    "validator": "surfpool start --watch"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
-    "@solana/spl-token": "^0.4.13"
+    "@solana/kit": "^3.0.2",
+    "@solana/spl-token": "^0.4.13",
+    "solana-kite": "^1.5.4",
+    "tsx": "^4.20.5"
   },
   "devDependencies": {
     "@codama/nodes-from-anchor": "^1.2.6",
@@ -28,5 +33,4 @@
     "ts-mocha": "^10.0.0",
     "typescript": "^5.7.3"
   }
-
 }

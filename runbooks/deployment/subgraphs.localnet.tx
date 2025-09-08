@@ -1,0 +1,9 @@
+
+action "timelock_base_wallet_program_vault_initialized" "svm::deploy_subgraph" {
+    program_id = action.deploy_timelock_base_wallet_program.program_id
+    program_idl = action.deploy_timelock_base_wallet_program.program_idl
+    block_height = 0 // action.deploy_timelock_base_wallet_program.block_height
+    event {
+        name = "VaultInitialized"
+    }
+}
