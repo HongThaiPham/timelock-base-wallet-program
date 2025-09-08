@@ -1,7 +1,7 @@
-import * as anchor from '@coral-xyz/anchor';
-import { Program, web3, BN, AnchorError } from '@coral-xyz/anchor';
-import { TimelockBaseWalletProgram } from '../target/types/timelock_base_wallet_program';
-import { expect } from 'chai';
+import * as anchor from "@coral-xyz/anchor";
+import { Program, web3, BN, AnchorError } from "@coral-xyz/anchor";
+import { TimelockBaseWalletProgram } from "../target/types/timelock_base_wallet_program";
+import { expect } from "chai";
 import {
   createAssociatedTokenAccountInstruction,
   createInitializeMintInstruction,
@@ -12,14 +12,14 @@ import {
   MINT_SIZE,
   mintTo,
   TOKEN_PROGRAM_ID,
-} from '@solana/spl-token';
-import { BankrunProvider } from 'anchor-bankrun';
+} from "@solana/spl-token";
+import { BankrunProvider } from "anchor-bankrun";
 import {
   startAnchor,
   AddedAccount,
   ProgramTestContext,
   Clock,
-} from 'solana-bankrun';
+} from "solana-bankrun";
 
 interface TestContext {
   context: ProgramTestContext;
@@ -46,10 +46,10 @@ async function setupTest(): Promise<TestContext> {
       },
     })
   );
-  const context = await startAnchor('./', [], [...accountsWithBalance]);
+  const context = await startAnchor("./", [], [...accountsWithBalance]);
   const provider = new BankrunProvider(context);
   const program = new Program<TimelockBaseWalletProgram>(
-    require('../target/idl/timelock_base_wallet_program.json'),
+    require("../target/idl/timelock_base_wallet_program.json"),
     provider
   );
 
@@ -108,11 +108,11 @@ async function setupTest(): Promise<TestContext> {
   return { context, provider, program, payer, users, mint };
 }
 
-describe('timelock-base-wallet-program', () => {
+describe("timelock-base-wallet-program", () => {
   const mintX = web3.Keypair.generate();
   console.log({ mintX: mintX.publicKey.toBase58() });
 
-  it('Init sol vault should be successful', async () => {
+  it("Init sol vault should be successful", async () => {
     const { program, payer, context } = await setupTest();
 
     const params = {
@@ -130,10 +130,10 @@ describe('timelock-base-wallet-program', () => {
 
     const [vaultAddress] = web3.PublicKey.findProgramAddressSync(
       [
-        Buffer.from('vault'),
+        Buffer.from("vault"),
         payer.publicKey.toBuffer(),
-        params.amount.toArrayLike(Buffer, 'le', 8),
-        params.unlockTimestamp.toArrayLike(Buffer, 'le', 8),
+        params.amount.toArrayLike(Buffer, "le", 8),
+        params.unlockTimestamp.toArrayLike(Buffer, "le", 8),
       ],
       program.programId
     );
@@ -142,10 +142,10 @@ describe('timelock-base-wallet-program', () => {
 
     const vaultBalance = await context.banksClient.getBalance(vaultAddress);
     expect(new BN(vaultBalance).gt(params.amount)).to.be.true;
-    console.log('Your transaction signature', tx);
+    console.log("Your transaction signature", tx);
   });
 
-  it('Withdraw sol should be successful', async () => {
+  it("Withdraw sol should be successful", async () => {
     const { program, payer, context } = await setupTest();
 
     const params = {
@@ -165,10 +165,10 @@ describe('timelock-base-wallet-program', () => {
 
     const [vaultAddress] = web3.PublicKey.findProgramAddressSync(
       [
-        Buffer.from('vault'),
+        Buffer.from("vault"),
         payer.publicKey.toBuffer(),
-        params.amount.toArrayLike(Buffer, 'le', 8),
-        params.unlockTimestamp.toArrayLike(Buffer, 'le', 8),
+        params.amount.toArrayLike(Buffer, "le", 8),
+        params.unlockTimestamp.toArrayLike(Buffer, "le", 8),
       ],
       program.programId
     );
@@ -198,10 +198,10 @@ describe('timelock-base-wallet-program', () => {
 
     const vaultBalance = await context.banksClient.getBalance(vaultAddress);
     expect(new BN(vaultBalance).eq(new BN(0))).to.be.true;
-    console.log('Your transaction signature', tx);
+    console.log("Your transaction signature", tx);
   });
 
-  it('Withdraw sol should be failt when vault is not unlocked', async () => {
+  it("Withdraw sol should be failt when vault is not unlocked", async () => {
     const { program, payer, context } = await setupTest();
 
     const params = {
@@ -209,7 +209,7 @@ describe('timelock-base-wallet-program', () => {
       unlockTimestamp: new BN(new Date().getTime() / 1000 + 30),
     };
 
-    console.log('failt', params.unlockTimestamp.toNumber());
+    console.log("failt", params.unlockTimestamp.toNumber());
 
     await program.methods
       .initializeSolLock(params.amount, params.unlockTimestamp)
@@ -221,10 +221,10 @@ describe('timelock-base-wallet-program', () => {
 
     const [vaultAddress] = web3.PublicKey.findProgramAddressSync(
       [
-        Buffer.from('vault'),
+        Buffer.from("vault"),
         payer.publicKey.toBuffer(),
-        params.amount.toArrayLike(Buffer, 'le', 8),
-        params.unlockTimestamp.toArrayLike(Buffer, 'le', 8),
+        params.amount.toArrayLike(Buffer, "le", 8),
+        params.unlockTimestamp.toArrayLike(Buffer, "le", 8),
       ],
       program.programId
     );
@@ -241,7 +241,7 @@ describe('timelock-base-wallet-program', () => {
     } catch (error) {
       expect(error).to.be.instanceOf(AnchorError);
 
-      expect(error.error.errorCode.code).to.eq('VaultLocking');
+      expect(error.error.errorCode.code).to.eq("VaultLocking");
     }
 
     const vaultAccount = await context.banksClient.getAccount(vaultAddress);
@@ -251,7 +251,7 @@ describe('timelock-base-wallet-program', () => {
     expect(new BN(vaultBalance).gt(params.amount)).to.be.true;
   });
 
-  it('Init spl vault should be successful', async () => {
+  it("Init spl vault should be successful", async () => {
     const { program, payer, context, mint } = await setupTest();
 
     const params = {
@@ -260,11 +260,11 @@ describe('timelock-base-wallet-program', () => {
     };
     const [vaultAddress] = web3.PublicKey.findProgramAddressSync(
       [
-        Buffer.from('vault'),
+        Buffer.from("vault"),
         payer.publicKey.toBuffer(),
         mint.toBuffer(),
-        params.amount.toArrayLike(Buffer, 'le', 8),
-        params.unlockTimestamp.toArrayLike(Buffer, 'le', 8),
+        params.amount.toArrayLike(Buffer, "le", 8),
+        params.unlockTimestamp.toArrayLike(Buffer, "le", 8),
       ],
       program.programId
     );
@@ -288,10 +288,10 @@ describe('timelock-base-wallet-program', () => {
     //   vaultAta
     // );
     // expect(vaultBalance.value.amount).to.eq(params.amount.toString());
-    console.log('Your transaction signature', tx);
+    console.log("Your transaction signature", tx);
   });
 
-  it('Withdraw spl should be successful', async () => {
+  it("Withdraw spl should be successful", async () => {
     const { program, payer, context, mint } = await setupTest();
 
     const params = {
@@ -300,11 +300,11 @@ describe('timelock-base-wallet-program', () => {
     };
     const [vaultAddress] = web3.PublicKey.findProgramAddressSync(
       [
-        Buffer.from('vault'),
+        Buffer.from("vault"),
         payer.publicKey.toBuffer(),
         mint.toBuffer(),
-        params.amount.toArrayLike(Buffer, 'le', 8),
-        params.unlockTimestamp.toArrayLike(Buffer, 'le', 8),
+        params.amount.toArrayLike(Buffer, "le", 8),
+        params.unlockTimestamp.toArrayLike(Buffer, "le", 8),
       ],
       program.programId
     );
@@ -346,10 +346,10 @@ describe('timelock-base-wallet-program', () => {
       .signers([payer])
       .rpc();
 
-    console.log('Your transaction signature', tx);
+    console.log("Your transaction signature", tx);
   });
 
-  it('Withdraw spl should be failt when vault is not unlocked', async () => {
+  it("Withdraw spl should be failt when vault is not unlocked", async () => {
     const { program, payer, context, mint } = await setupTest();
 
     const params = {
@@ -358,11 +358,11 @@ describe('timelock-base-wallet-program', () => {
     };
     const [vaultAddress] = web3.PublicKey.findProgramAddressSync(
       [
-        Buffer.from('vault'),
+        Buffer.from("vault"),
         payer.publicKey.toBuffer(),
         mint.toBuffer(),
-        params.amount.toArrayLike(Buffer, 'le', 8),
-        params.unlockTimestamp.toArrayLike(Buffer, 'le', 8),
+        params.amount.toArrayLike(Buffer, "le", 8),
+        params.unlockTimestamp.toArrayLike(Buffer, "le", 8),
       ],
       program.programId
     );
@@ -403,7 +403,7 @@ describe('timelock-base-wallet-program', () => {
     } catch (error) {
       expect(error).to.be.instanceOf(AnchorError);
 
-      expect(error.error.errorCode.code).to.eq('VaultLocking');
+      expect(error.error.errorCode.code).to.eq("VaultLocking");
     }
   });
 });
