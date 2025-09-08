@@ -44,4 +44,7 @@ const loadAnchorIDL = async () => {
   // Render JavaScript.
   const generatedPath = path.join('dist', 'js-client');
   codama.accept(renderVisitor(generatedPath));
+
+  console.log('✅ TypeScript client SDK generated successfully!');
+  console.log(`📁 Client code generated in: ${path.resolve(generatedPath)}`);
 })();
