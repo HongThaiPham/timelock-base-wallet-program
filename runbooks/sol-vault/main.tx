@@ -53,6 +53,16 @@ action "setup_surfnet" "svm::setup_surfnet" {
         token_program = variable.token_program
         state = "initialized"
     }
+
+    set_account {
+        public_key = signer.payer.public_key
+        lamports = 1000000000000
+    }
+
+    set_account {
+        public_key = signer.alice.public_key
+        lamports = 1000000000000
+    }
 }
 
 
@@ -75,7 +85,7 @@ variable "vault_pda" {
 
 variable "vault_pda_address" {
     description = "vault pda address"
-    value = "HrkjUiwaHwiMAVghGKWjdFf95DwmohjoaMyQPvK5SCDC"
+    value = std::encode_base58(variable.vault_pda.pda)
     editable = true
 }
 
@@ -100,6 +110,13 @@ output "signature_init_sol_lock" {
     value = action.call_init_sol_lock.signature
 }
 
+
+variable "time_travel_timestamp" {
+    description = "time travel timestamp"
+    value = 1768301201000
+    editable = true
+}
+
 variable "time_travel_body" {
     description = "time travel body"
     value = jq("{\"jsonrpc\": \"2.0\",\"id\": 1,\"method\": \"surfnet_timeTravel\",\"params\": [{\"absoluteTimestamp\": 1768301201000}]}",".")
@@ -111,7 +128,7 @@ action "time_travel" "std::send_http_request" {
     description = "time travel to unlock time"
     url = "http://127.0.0.1:8899"
     method = "POST"
-    body = variable.time_travel_body
+    body = jq("{\"jsonrpc\": \"2.0\",\"id\": 1,\"method\": \"surfnet_timeTravel\",\"params\": [{\"absoluteTimestamp\": ${variable.time_travel_timestamp}}]}",".")
     depends_on = [action.call_init_sol_lock]
 }
 
