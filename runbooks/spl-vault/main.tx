@@ -1,0 +1,182 @@
+addon "svm" {
+    rpc_api_url = input.rpc_api_url
+    network_id = input.network_id
+}
+
+signer "payer" "svm::secret_key" {
+    description = "Pays fees for program deployments and operations"
+    keypair_json = "~/.config/solana/id.json"
+    // See documentation for other options (mnemonic, etc): https://docs.surfpool.run/iac/svm/signers
+}
+    
+signer "authority" "svm::secret_key" {
+    description = "Can upgrade programs and manage critical ops"
+    keypair_json = "~/.config/solana/id.json"
+}
+
+signer "alice" "svm::web_wallet" {
+    description = "This is Alice wallet"
+}
+
+
+variable "program" {
+    description = "The program to to invoke."
+    value = svm::get_program_from_anchor_project("timelock_base_wallet_program")
+}
+
+variable "token_program" {
+    description = "The token program address. 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' for Token (default), 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' for Token2022."
+    value = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+    editable = true
+}
+
+variable "associated_token_program" {
+    description = "The associated token program address"
+    value = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+}
+
+variable "usdc_mint" {
+    description = "The public key of the usdc_mint"
+    value = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+    editable = true
+}
+
+
+variable "init_usdc_amount" {
+    description = "The amount of tokens in token account"
+    value = 1000000000
+    editable = true
+}
+
+
+action "setup_surfnet" "svm::setup_surfnet" {
+    set_token_account {
+        public_key = signer.payer.public_key
+        token = "usdc"
+        amount = variable.init_usdc_amount
+        token_program = variable.token_program
+        state = "initialized"
+    }
+
+    set_account {
+        public_key = signer.payer.public_key
+        lamports = svm::sol_to_lamports(10)
+    }
+
+    set_account {
+        public_key = signer.alice.public_key
+        lamports = svm::sol_to_lamports(10)
+    }
+}
+
+
+variable "amount" {
+    description = "The amount to lock"
+    value = 1000000
+    editable = true
+}
+
+variable "unlock_timestamp" {
+    description = "The time to unlock"
+    value = 1758301200
+    editable = true
+}
+
+variable "vault_pda" {
+    description = "vault pda"
+    value = svm::find_pda(variable.program.program_id, [std::encode_hex("vault"), signer.alice.public_key, variable.usdc_mint, svm::u64(variable.amount), svm::i64(variable.unlock_timestamp)])
+}
+
+variable "vault_pda_address" {
+    description = "vault pda address"
+    value = variable.vault_pda.pda
+    editable = true
+}
+
+action "call_init_spl_lock" "svm::process_instructions" {
+	signers = [signer.alice]
+    instruction {
+        program_idl = variable.program.idl
+        instruction_name = "initialize_spl_lock"
+        instruction_args = [variable.amount, variable.unlock_timestamp]
+        signer {
+            public_key = signer.alice.public_key
+        }
+        mint {
+          public_key = variable.usdc_mint
+        }
+        token_program {
+          public_key = variable.token_program
+        }
+        associated_token_program {
+          public_key = variable.associated_token_program
+        }
+        system_program {
+            public_key = svm::system_program_id()
+        }
+    }
+}
+
+
+output "signature_init_spl_lock" {
+    description = "The signature of the transaction"
+    value = action.call_init_spl_lock.signature
+}
+
+
+variable "time_travel_timestamp" {
+    description = "time travel timestamp"
+    value = 1768301201000
+    editable = true
+}
+
+
+action "time_travel" "std::send_http_request" {
+  description = "time travel to unlock time"
+  url = "http://127.0.0.1:8899"
+  method = "POST"
+  body = jq("{\"jsonrpc\": \"2.0\",\"id\": 1,\"method\": \"surfnet_timeTravel\",\"params\": [{\"absoluteTimestamp\": ${variable.time_travel_timestamp}}]}",".")
+  depends_on = [action.call_init_spl_lock]
+}
+
+output "time_travel_status" {
+  description = "time travel status"
+  value = action.time_travel.status_code
+}
+
+action "call_withdraw_spl_lock" "svm::process_instructions" {
+    description = "call withdraw_spl_lock to create close vault and withdraw all spl-token"
+	signers = [signer.alice]
+    instruction {
+        program_idl = variable.program.idl
+        instruction_name = "withdraw_spl_lock"
+        signer {
+          public_key = signer.alice.public_key
+        }
+        vault {
+          public_key = variable.vault_pda_address
+        }
+        mint {
+          public_key = variable.usdc_mint
+        }
+        token_program {
+          public_key = variable.token_program
+        }
+        system_program {
+          public_key = svm::system_program_id()
+        }
+    }
+    depends_on = [action.time_travel]
+}
+
+
+output "signature_withdraw_spl_lock" {
+    description = "The signature of the transaction"
+    value = action.call_withdraw_spl_lock.signature
+}
+
+
+output "program_id" {
+  description = "Program id"
+  value = variable.program.program_id
+}
