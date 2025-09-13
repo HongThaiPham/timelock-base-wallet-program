@@ -24,36 +24,8 @@ variable "program" {
     value = svm::get_program_from_anchor_project("timelock_base_wallet_program")
 }
 
-variable "token_program" {
-    description = "The token program address. 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' for Token (default), 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' for Token2022."
-    value = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-    editable = true
-
-}
-
-variable "usdc_mint" {
-    description = "The public key of the usdc_mint"
-    value = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
-    editable = true
-}
-
-
-variable "init_usdc_amount" {
-    description = "The amount of tokens in token account"
-    value = 1000
-    editable = true
-}
-
 
 action "setup_surfnet" "svm::setup_surfnet" {
-    set_token_account {
-        public_key = signer.payer.public_key
-        token = "usdc"
-        amount = variable.init_usdc_amount
-        token_program = variable.token_program
-        state = "initialized"
-    }
-
     set_account {
         public_key = signer.payer.public_key
         lamports = 1000000000000
@@ -90,6 +62,7 @@ variable "vault_pda_address" {
 }
 
 action "call_init_sol_lock" "svm::process_instructions" {
+    description = "call initialize_sol_lock to create a new sol vault"
 	signers = [signer.alice]
     instruction {
         program_idl = variable.program.idl
@@ -138,6 +111,7 @@ output "time_travel_status" {
 }
 
 action "call_withdraw_sol_lock" "svm::process_instructions" {
+    description = "call withdraw_sol_lock to create close vault and withdraw all sol"
 	signers = [signer.alice]
     instruction {
         program_idl = variable.program.idl

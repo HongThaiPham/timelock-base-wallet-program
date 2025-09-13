@@ -8,6 +8,9 @@ runbooks:
   - name: sol-vault
     description: Test SOL vault functionality
     location: runbooks/sol-vault
+  - name: spl-vault
+    description: Test SPL-token vault functionality
+    location: runbooks/spl-vault
 environments:
   localnet:
     network_id: localnet
