@@ -80,12 +80,12 @@ variable "unlock_timestamp" {
 
 variable "vault_pda" {
     description = "vault pda"
-    value = svm::find_pda(variable.program.program_id, [std::encode_hex("vault"), signer.alice.public_key, variable.amount, variable.unlock_timestamp])
+    value = svm::find_pda(variable.program.program_id, [std::encode_hex("vault"), signer.alice.public_key, svm::u64(variable.amount), svm::i64(variable.unlock_timestamp)])
 }
 
 variable "vault_pda_address" {
     description = "vault pda address"
-    value = std::encode_base58(variable.vault_pda.pda)
+    value = variable.vault_pda.pda
     editable = true
 }
 
