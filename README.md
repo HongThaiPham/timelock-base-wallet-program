@@ -5,7 +5,7 @@ A Solana blockchain program that provides timelock functionality for both SOL (n
 ## 🚀 Features
 
 - **SOL Timelock**: Lock native SOL tokens with customizable unlock timestamps
-- **SPL Token Timelock**: Lock any SPL tokens with timelock functionality  
+- **SPL Token Timelock**: Lock any SPL tokens with timelock functionality
 - **Secure Withdrawal**: Tokens can only be withdrawn by the original owner after the unlock time
 - **Flexible Timing**: Set any future timestamp for unlock
 - **Built with Anchor**: Uses the modern Anchor framework for Solana development
@@ -64,17 +64,20 @@ npm install -g yarn
 ## 🔧 Build Instructions
 
 1. **Clone the repository**:
+
    ```bash
    git clone <repository-url>
    cd timelock-base-wallet-program
    ```
 
 2. **Install dependencies**:
+
    ```bash
    yarn install
    ```
 
 3. **Build the Anchor program**:
+
    ```bash
    anchor build
    ```
@@ -89,28 +92,40 @@ npm install -g yarn
 The project uses TypeScript tests with Mocha and Anchor's bankrun for testing:
 
 1. **Make sure the program is built**:
+
    ```bash
    anchor build
    ```
 
 2. **Run the tests**:
+
    ```bash
    anchor test
    ```
 
    Or run tests directly:
+
    ```bash
    yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts
    ```
 
 3. **Run specific test files**:
+
    ```bash
    yarn run ts-mocha -p ./tsconfig.json tests/timelock-base-wallet-program.ts
+   ```
+
+4. **Run tests with Surfpool from txtx**:
+   ```bash
+   surfpool start --watch
+   surfpool run sol-vault
+   surfpool run spl-vault
    ```
 
 ## 🔍 Code Quality
 
 - **Lint TypeScript code**:
+
   ```bash
   yarn lint
   ```
@@ -125,6 +140,7 @@ The project uses TypeScript tests with Mocha and Anchor's bankrun for testing:
 ### Core Functions
 
 #### 1. Initialize SOL Lock
+
 ```rust
 pub fn initialize_sol_lock(
     ctx: Context<InitializeSolLock>,
@@ -132,19 +148,24 @@ pub fn initialize_sol_lock(
     unlock_timestamp: i64,
 ) -> Result<()>
 ```
+
 Creates a new timelock vault for SOL tokens.
 
 **Parameters:**
+
 - `amount`: Amount of SOL to lock (in lamports)
 - `unlock_timestamp`: Unix timestamp when tokens can be withdrawn
 
 #### 2. Withdraw SOL Lock
+
 ```rust
 pub fn withdraw_sol_lock(ctx: Context<WithdrawSolLock>) -> Result<()>
 ```
+
 Withdraws SOL tokens from a vault after the unlock timestamp has passed.
 
 #### 3. Initialize SPL Lock
+
 ```rust
 pub fn initialize_spl_lock(
     ctx: Context<InitializeSplLock>,
@@ -152,21 +173,26 @@ pub fn initialize_spl_lock(
     unlock_timestamp: i64,
 ) -> Result<()>
 ```
+
 Creates a new timelock vault for SPL tokens.
 
 **Parameters:**
+
 - `amount`: Amount of SPL tokens to lock
 - `unlock_timestamp`: Unix timestamp when tokens can be withdrawn
 
 #### 4. Withdraw SPL Lock
+
 ```rust
 pub fn withdraw_spl_lock(ctx: Context<WithdrawSplLock>) -> Result<()>
 ```
+
 Withdraws SPL tokens from a vault after the unlock timestamp has passed.
 
 ### State Structure
 
 #### Vault
+
 ```rust
 pub struct Vault {
     pub owner: Pubkey,           // Owner of the locked tokens
@@ -194,7 +220,8 @@ import * as anchor from '@coral-xyz/anchor';
 import { TimelockBaseWalletProgram } from './target/types/timelock_base_wallet_program';
 
 // Initialize program
-const program = anchor.workspace.TimelockBaseWalletProgram as Program<TimelockBaseWalletProgram>;
+const program = anchor.workspace
+  .TimelockBaseWalletProgram as Program<TimelockBaseWalletProgram>;
 
 // Lock SOL for 24 hours
 const unlockTimestamp = Date.now() / 1000 + 24 * 60 * 60; // 24 hours from now
