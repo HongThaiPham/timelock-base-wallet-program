@@ -51,7 +51,7 @@ variable "init_usdc_amount" {
 
 action "setup_surfnet" "svm::setup_surfnet" {
     set_token_account {
-        public_key = signer.payer.public_key
+        public_key = signer.alice.public_key
         token = "usdc"
         amount = variable.init_usdc_amount
         token_program = variable.token_program
