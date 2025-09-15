@@ -46,6 +46,17 @@ jobs:
           sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_VERSION }}/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
+      - name: Configure Solana CLI
+        run: |
+          # Create Solana config directory
+          mkdir -p ~/.config/solana
+          # Generate a new keypair for testing
+          solana-keygen new --no-bip39-passphrase --silent --outfile ~/.config/solana/id.json
+          # Set Solana config to use localnet
+          solana config set --url localhost
+          # Verify the configuration
+          solana config get
+
       - name: Install Anchor CLI
         run: |
           # Install AVM (Anchor Version Manager)
