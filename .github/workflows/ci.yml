@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  SOLANA_VERSION: '2.1.0'
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'yarn'
+
+      - name: Install Yarn
+        run: npm install -g yarn
+
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_VERSION }}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Install Anchor CLI
+        run: |
+          # Install AVM (Anchor Version Manager)
+          cargo install --git https://github.com/coral-xyz/anchor avm --force
+          # Install latest version of Anchor CLI
+          avm install latest
+          avm use latest
+
+      - name: Verify installations
+        run: |
+          rustc --version
+          cargo --version
+          solana --version
+          anchor --version
+          node --version
+          yarn --version
+
+      - name: Build Anchor program
+        run: anchor build
+
+      - name: Verify build
+        run: |
+          if [ -f "target/deploy/timelock_base_wallet_program.so" ]; then
+            echo "✅ Program built successfully"
+            ls -la target/deploy/
+          else
+            echo "❌ Program build failed"
+            exit 1
+          fi
+
+      - name: Run Anchor tests
+        run: anchor test
