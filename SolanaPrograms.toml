@@ -1,0 +1,8 @@
+[program]
+name = "timelock_base_wallet_program"
+version = "0.1.0"
+program_id = "61DbVFQopKRi1kyCHBNdYeHHs5xE633Sen2JLFP91reU"
+network = "devnet"
+description = "A Solana program for a timelock base wallet"
+repository = "https://github.com/HongThaiPham/timelock-base-wallet-program"
+authority_keypair = "~/.config/solana/id.json"
